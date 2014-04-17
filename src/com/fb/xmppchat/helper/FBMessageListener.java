@@ -1,5 +1,7 @@
 package com.fb.xmppchat.helper;
- 
+
+import com.fb.xmppchat.app.FBConsoleChatApp;
+
 import org.apache.commons.collections.BidiMap;
 import org.apache.commons.collections.MapIterator;
  
@@ -15,10 +17,17 @@ public class FBMessageListener implements MessageListener, Runnable {
     private FBMessageListener fbml = this;
     private XMPPConnection conn;
     private BidiMap friends;
- 
-    public FBMessageListener(XMPPConnection conn) {
+    private FBConsoleChatApp sender;
+ 	
+ 	public static volatile String FirstMessage;
+ 	private Boolean FirstMessageFlag;
+ 	
+    public FBMessageListener(XMPPConnection conn, FBConsoleChatApp snd) {
 	this.conn = conn;
+	this.sender = snd;
 	new Thread(this).start();
+	FirstMessageFlag = true;
+	FirstMessage = null;
     }
  
     public void setFriends(BidiMap friends) {
@@ -30,6 +39,7 @@ public class FBMessageListener implements MessageListener, Runnable {
 	MapIterator it = friends.mapIterator();
 	String key = null;
 	RosterEntry entry = null;
+	
 	while (it.hasNext()) {
 	    key = (String) it.next();
 	    entry = (RosterEntry) it.getValue();
@@ -37,12 +47,31 @@ public class FBMessageListener implements MessageListener, Runnable {
 		break;
 	    }
 	}
+	
+	if ((message != null) && (message.getBody() != null) && (FirstMessageFlag)) {
+		FirstMessage = message.getBody();
+	    FirstMessageFlag = false;
+	    System.out.println("Debug 1");
+	    
+	    try {
+			sender.sendMessage("Replying back", key);
+	    }
+	    catch(Exception ex) {
+	    	System.out.println(ex.toString());
+	    }
+	}
+	
 	if ((message != null) && (message.getBody() != null)) {
 	    System.out.println("You've got new message from " + entry.getName() 
 			       + "(" + key + ") :");
 	    System.out.println(message.getBody());
-	    System.out.print("Your choice [1-3]: ");
+	    System.out.print("Your choice [1-4]: ");
 	}
+    }
+    
+    public byte[] retrieveFirstMessage()
+    {
+        return this.FirstMessage.getBytes();
     }
  
     public void run() {
