@@ -131,15 +131,17 @@ public class FBConsoleChatApp {
  	     
  	     try {
  	     
- 	     PublicKey pkiPeer = (PublicKey) Base64Coder.fromString(fbml.retrieveFirstMessage());
- 	     System.out.println("PEER KEY" + pkiPeer.toString());
- 	     String pkiShared = dh.getPeerKey(pkiPeer);
- 	     System.out.println("SHARED KEY" + pkiShared);
- 	     System.out.println("MY public KEY" + Base64Coder.toString(pk));
+			 PublicKey pkiPeer = (PublicKey) Base64Coder.fromString(fbml.retrieveFirstMessage());
+			 //System.out.println("PEER KEY" + pkiPeer.toString());
+			 String pkiShared = dh.getPeerKey(pkiPeer);
+			 System.out.println("SHARED KEY " + pkiShared);
+			 //System.out.println("MY public KEY" + Base64Coder.toString(pk));
+ 	     }
+ 	     catch (Exception e) {}
  	     
  	     //TEST
  	     
- 	     if (Base64Coder.fromString(Base64Coder.toString(pk)) != null)
+ 	     /*if (Base64Coder.fromString(Base64Coder.toString(pk)) != null)
  	     {
  	     System.out.println("TEST");
  	     System.out.println(Base64Coder.fromString(Base64Coder.toString(pk)));
@@ -152,7 +154,7 @@ public class FBConsoleChatApp {
  	     //System.out.println(dh.stringToPublicKey(fbml.retrieveFirstMessage()));
  	     //dh.getPeerKey(fbml.retrieveFirstMessage());
  	     }
- 	     catch (Exception e) {}
+ 	     */
       }
    }
  
@@ -190,7 +192,7 @@ public class FBConsoleChatApp {
     public void sendECDHkey() throws XMPPException
      , IOException {
      
-	  System.out.println("My PublicKey BEFORE sending" + pk);
+	  //System.out.println("My PublicKey BEFORE sending" + pk);
 	  
       System.out.println("Type the key number of your friend (e.g. #1)");
       String friendKey = null;
@@ -198,7 +200,7 @@ public class FBConsoleChatApp {
       System.out.print("Your friend's Key Number: ");
       friendKey = readInput();
       
-      System.out.print("You sent g^a mod p: " + Base64Coder.toString(pk) );
+      //System.out.print("You sent g^a mod p: " + Base64Coder.toString(pk) );
       
       sendECDHkey((RosterEntry) friends.get(friendKey), Base64Coder.toString(pk) );
       
@@ -265,7 +267,7 @@ public class FBConsoleChatApp {
          ChatManager chatManager = connection.getChatManager();
          Chat chat = chatManager.createChat(friend.getUser(), fbml);
          chat.sendMessage(text);
-         System.out.println("Your g^a mod p has been sent to "
+         System.out.println("Your Public Key has been sent to "
             + friend.getName());
       }
    }

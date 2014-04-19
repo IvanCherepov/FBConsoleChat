@@ -56,15 +56,22 @@ public class FBMessageListener implements MessageListener, Runnable {
 		}
 	
 		if ((message != null) && (message.getBody() != null)) {
-			System.out.println("You've got new message from " + entry.getName() 
-					   + "(" + key + ") :");
-			System.out.println(message.getBody());
-			System.out.print("Your choice [1-4]: ");
-		
+			
+			if ((!FirstMessageFlag) && (!DHKeySentFlag))
+			{
+				System.out.println("You've got new message from " + entry.getName() 
+						   + "(" + key + ") :");
+				System.out.println(message.getBody());
+				System.out.print("Your choice [1-4]: ");
+			
+			}
+			
 			if (DHKeySentFlag) {
-			System.out.println("TESt");
-			FirstMessage = message.getBody();
-			FirstMessageFlag = false;
+			//System.out.println("TESt");
+				FirstMessage = message.getBody();
+				FirstMessageFlag = false;
+				System.out.println("You've got Public Key from " + entry.getName() 
+				+ "(" + key + ") :");
 			}
 			
 			if ((FirstMessageFlag) && (!DHKeySentFlag)){
@@ -83,6 +90,8 @@ public class FBMessageListener implements MessageListener, Runnable {
 					System.out.println(ex.toString());
 				}
 			}
+			
+			
 		}
 		
     }
