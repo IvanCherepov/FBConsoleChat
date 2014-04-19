@@ -32,6 +32,17 @@ public class Utils
         
         return buf.toString();
     }
+	
+	/**
+     * Return the passed in byte array as a hex string.
+     * 
+     * @param data the bytes to be converted.
+     * @return a hex representation of data.
+     */
+    public static String toHex(byte[] data)
+    {
+        return toHex(data, data.length);
+    }
     
     private static class FixedRand extends SecureRandom
     {
@@ -78,13 +89,4 @@ public class Utils
 	    }
     }
     
-    /**
-     * Return a SecureRandom which produces the same value.
-     * <b>This is for testing only!</b>
-     * @return a fixed random
-     */
-    public static SecureRandom createFixedRandom()
-    {
-        return new FixedRand();
-    }
 }
