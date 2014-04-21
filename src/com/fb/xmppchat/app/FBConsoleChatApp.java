@@ -46,7 +46,7 @@ public class FBConsoleChatApp {
    private XMPPConnection connection;
    private BidiMap friends = new DualHashBidiMap();
    private FBMessageListener fbml;
-   private BasicDHExample dh;
+   public BasicDHExample dh;
    
    private String friendKey = null;
    
@@ -62,6 +62,14 @@ public class FBConsoleChatApp {
     public static byte[] aShared = null;
     public static String aSharedS = "No";
     public static PublicKey pk;
+    
+    public  PublicKey pkiPeerB = null;
+    public  PublicKey pkiPeerC = null;
+    public  PublicKey pkiPeerAC = null; //interm key to send
+    public  PublicKey pkiPeerCB = null; //interm key for receiving
+    public  PublicKey pkiPeerBA = null;
+    
+    public Boolean iAmSender3P = false;
  
    public String connect() throws XMPPException {
       config = new ConnectionConfiguration(FB_XMPP_HOST, FB_XMPP_PORT);
@@ -70,9 +78,9 @@ public class FBConsoleChatApp {
       config.setSASLAuthenticationEnabled(true);
       config.setDebuggerEnabled(false);
       connection = new XMPPConnection(config);
-      connection.connect();
-      fbml = new FBMessageListener(connection, this);
+      connection.connect();   
       dh = new BasicDHExample();
+      fbml = new FBMessageListener(connection, this, dh);
       return connection.getConnectionID();
    }
  
@@ -103,9 +111,10 @@ public class FBConsoleChatApp {
 	  System.out.println("0. Initial Setup");
       System.out.println("1. List of Friends online");
       System.out.println("2. Send Message");
-      System.out.println("3. Initiate key exchange");
-      System.out.println("4. EXIT");
-      System.out.print("Your choice [1-4]: ");
+      System.out.println("3. Initiate key exchange for 2 Parties");
+      System.out.println("4. Initiate key exchange for 3 Parties");
+      System.out.println("5. EXIT");
+      System.out.print("Your choice [0-5]: ");
    }
    
    public void initialSetup() {
@@ -130,16 +139,32 @@ public class FBConsoleChatApp {
          fbml.setFriends(friends);
  	     
  	     try {
- 	     
-			 PublicKey pkiPeer = (PublicKey) Base64Coder.fromString(fbml.retrieveFirstMessage());
+			 // 2 parties
+			 //PublicKey pkiPeer = (PublicKey) Base64Coder.fromString(fbml.retrieveFirstMessage());
 			 //System.out.println("PEER KEY" + pkiPeer.toString());
-			 String pkiShared = dh.getPeerKey(pkiPeer);
-			 System.out.println("SHARED KEY " + pkiShared);
+			 String pkiShared = dh.getPeerKey(pkiPeerB);
+			 System.out.println("2 party SHARED KEY " + pkiShared);
 			 //System.out.println("MY public KEY" + Base64Coder.toString(pk));
  	     }
  	     catch (Exception e) {}
  	     
- 	     //TEST
+ 	     
+ 	     try {
+ 	     if (pkiPeerB !=null){
+ 	     	 System.out.println("Public key A  " + pk);
+ 	     	 System.out.println("Public key B  " + pkiPeerB);
+ 	     	 //System.out.println("Public key C  " + pkiPeerC);
+ 	     	 //if (pkiPeerAC !=null) {System.out.println("Public key Interim  AC " + pkiPeerAC);}
+ 	     	 //if (pkiPeerCB !=null) {System.out.println("Public key Interim CB " + pkiPeerCB);}
+ 	     	 //if (pkiPeerBA !=null) {System.out.println("Public key Interim BA  " + pkiPeerBA);}
+			 String pkiSharedABC = dh.getPeerKey(pkiPeerCB);
+			 System.out.println("3 party SHARED KEY " + pkiSharedABC);
+		 }
+		 
+		 
+		  }
+ 	     catch (Exception e) {}
+		 //TEST
  	     
  	     /*if (Base64Coder.fromString(Base64Coder.toString(pk)) != null)
  	     {
@@ -173,10 +198,6 @@ public class FBConsoleChatApp {
    public void sendMessage(String text, String key) throws XMPPException {
    	  sendMessage((RosterEntry) friends.get(key), text);
    }
-   
-   public void sendECDHkey(String text, String key) throws XMPPException {
-   	  sendECDHkey((RosterEntry) friends.get(key), text);
-   }
  
    public void sendMessage(final RosterEntry friend, String text) 
      throws XMPPException {
@@ -188,8 +209,12 @@ public class FBConsoleChatApp {
             + friend.getName());
       }
    }
-      
-    public void sendECDHkey() throws XMPPException
+
+   public void sendECDHkey(String text, String key) throws XMPPException {
+   	  sendECDHkey((RosterEntry) friends.get(key), text);
+   }
+        
+    public void sendECDHkey2P() throws XMPPException
      , IOException {
      
 	  //System.out.println("My PublicKey BEFORE sending" + pk);
@@ -204,63 +229,97 @@ public class FBConsoleChatApp {
       
       sendECDHkey((RosterEntry) friends.get(friendKey), Base64Coder.toString(pk) );
       
-      fbml.DHKeySentFlag = true;
+      try {
+      	pkiPeerB = (PublicKey) Base64Coder.fromString(fbml.retrieveFirstMessage());
+      	}
+      	 catch (Exception e) {}
+      	 
+      //fbml.DHKeySentFlag3P = true;
     }
     
-    /*private String sterializePKey() {
+    public void sendIntKeyes3P(String key) throws Exception
+    {
+		if (pkiPeerBA == null) {pkiPeerBA = (PublicKey) dh.getIntermKey(pkiPeerB);}		
+			System.out.println("Sending Interm Key ba to a ");		
+			pkiPeerBA = (PublicKey) dh.getIntermKey(pkiPeerB);
+			sendECDHkey(Base64Coder.toString(pkiPeerBA), key);
+			System.out.println("DEtails " + pkiPeerBA + key);	
+    }
     
-		TKey key = new TKey();
-		key.key = pk;
-
-		try
-		{
-			//FileOutputStream fileOut = new FileOutputStream("temp.txt");
-			ObjectOutputStream out = new ObjectOutputStream();
-			out.writeObject(key);
-			out.close();
-			//fileOut.close();
-			System.out.printf("Serialized data is saved in /tmp/employee.ser");
-		}
-		catch(IOException i)
-		{
-			i.printStackTrace();
-		}
-		
-		/*try (BufferedReader br = new BufferedReader(new FileReader("temp.txt"))) {
-			StringBuilder sb = new StringBuilder();
-			String line = br.readLine();
-
-			while (line != null) {
-				sb.append(line);
-				sb.append(System.lineSeparator());
-				line = br.readLine();
-			}
-			String everything = sb.toString();
-			return everything;
-			}
-		catch (IOException e) {e.printStackTrace();}*
-		return null;
-    }*/
-    
-	/*private PublicKey deSterializePKey(String kPeer) {
-		try
-		{	
-			PrintWriter fileInput = new PrintWriter("temp.txt");
-			fileInput.println(kPeer);
-			FileInputStream fileIn = new FileInputStream("temp.txt");
-			
-			ObjectInputStream in = new ObjectInputStream(fileIn);
-			TKey key = new TKey();
-			key = in.readObject();
-			in.close();
-			fileIn.close();
-		}
-		catch(IOException i)
-		{
-			i.printStackTrace();
-		}
-    }*/
+    public void sendECDHkey3P() throws XMPPException
+     , IOException {
+     
+	  //System.out.println("My PublicKey BEFORE sending" + pk);
+	  iAmSender3P = true;
+	  //fbml.DHKeySentFlag3P = true;
+	  
+      System.out.println("Type the key number of your first friend (e.g. #1)");
+      String friendKey1 = null;
+      String text1 = null;
+      System.out.print("Your friend's Key Number: ");
+      friendKey1 = readInput();
       
+      //System.out.print("You sent g^a mod p: " + Base64Coder.toString(pk) );
+      
+      sendECDHkey((RosterEntry) friends.get(friendKey1), Base64Coder.toString(pk) );
+      
+      
+      try {
+      if (pkiPeerB == null) {
+		      Thread.sleep(3000);
+
+		pkiPeerB = (PublicKey) Base64Coder.fromString(fbml.retrieveFirstMessage());
+		System.out.println("SAY HI pkiPeerB " + pkiPeerB);
+		
+		
+		Thread.sleep(5000);
+		pkiPeerBA = (PublicKey) Base64Coder.fromString(fbml.retrieveSecondMessage());
+		System.out.println("SAY HI pkiPeer BA " + pkiPeerBA);
+		}
+		}
+ 	     catch (Exception e) {}
+		
+      System.out.println("Type the key number of your second friend (e.g. #1)");
+      String friendKey2 = null;
+      String text2 = null;
+      System.out.print("Your friend's Key Number: ");
+      friendKey2 = readInput();
+      
+      sendECDHkey((RosterEntry) friends.get(friendKey2), Base64Coder.toString(pkiPeerB) );
+      
+      //fbml.DHKeySentFlag2P = true;
+	  try {
+	  	
+	  	
+	  	Thread.sleep(3500);
+		pkiPeerC = (PublicKey) Base64Coder.fromString(fbml.retrieveFirstMessage());
+		System.out.println("SAY HI pkiPeerC " + pkiPeerC);
+		
+		Thread.sleep(5000);	
+		pkiPeerCB = (PublicKey) Base64Coder.fromString(fbml.retrieveSecondMessage());
+		System.out.println("SAY HI pkiPeer CB " + pkiPeerCB);
+		
+		
+	   		
+ 	   System.out.println("Sending PeerB to C");
+ 	   sendECDHkey((RosterEntry) friends.get(friendKey2), Base64Coder.toString(pkiPeerB)); 
+ 	   
+ 	   //System.out.println("Sending PeerC to B ");
+ 	   //sendECDHkey((RosterEntry) friends.get(friendKey1), Base64Coder.toString(pkiPeerC));
+
+		
+	   pkiPeerAC = (PublicKey) dh.getIntermKey(pkiPeerC);
+	   System.out.println("Sending Interm Key ac to B " + pkiPeerAC);
+	   sendECDHkey((RosterEntry) friends.get(friendKey1), Base64Coder.toString(pkiPeerAC));
+	   
+	   System.out.println("Sending Interm Key ba to C " + pkiPeerBA);
+	   sendECDHkey((RosterEntry) friends.get(friendKey2), Base64Coder.toString(pkiPeerBA));
+	   
+	   }
+ 	     catch (Exception e) {}
+    }
+    
+				      
     public void sendECDHkey(final RosterEntry friend, String text) 
      throws XMPPException {
       if ((connection != null) && (connection.isConnected())) {
@@ -295,13 +354,13 @@ public class FBConsoleChatApp {
          menu:
          while((data = app.readInput().trim()) != null) {
             if (!Character.isDigit(data.charAt(0))) {
-               System.out.println("Invalid input.Only 0-4 is allowed !");
+               System.out.println("Invalid input.Only 0-5 is allowed !");
                app.showMenu();
                continue;
             }
             int choice = Integer.parseInt(data);
-            if ((choice != 0) && (choice != 1) && (choice != 2) && (choice != 3) && (choice != 4)) {
-               System.out.println("Invalid input.Only 0-4 is allowed !");
+            if ((choice != 0) && (choice != 1) && (choice != 2) && (choice != 3) && (choice != 4) && (choice != 5)) {
+               System.out.println("Invalid input.Only 0-5 is allowed !");
                app.showMenu();
                continue;
             }
@@ -316,9 +375,12 @@ public class FBConsoleChatApp {
                case 2: app.sendMessage();
                        app.showMenu();
                        continue menu;
-			   case 3: app.sendECDHkey();
+			   case 3: app.sendECDHkey2P();
                        app.showMenu();     
-                       continue menu;    
+                       continue menu; 
+               case 4: app.sendECDHkey3P();
+                       app.showMenu();     
+                       continue menu;       
                default: break menu;
             }
          }

@@ -33,6 +33,8 @@ public class BasicDHExample
     private KeyAgreement aKeyAgree;
     private KeyPair      aPair;
     private KeyPairGenerator keyGen;
+    
+    public BigInteger x;
 
     public PublicKey dhInit() 
     {
@@ -52,7 +54,7 @@ public class BasicDHExample
         
         aKeyAgree.init(aPair.getPrivate());
         
-        BigInteger x = ((javax.crypto.interfaces.DHPrivateKey) aPair.getPrivate()).getX();
+        x = ((javax.crypto.interfaces.DHPrivateKey) aPair.getPrivate()).getX();
  		BigInteger y = ((javax.crypto.interfaces.DHPublicKey) aPair.getPublic()).getY();
  
         return pk;        
@@ -75,6 +77,24 @@ public class BasicDHExample
         //byte[] aShared = aKeyAgree.generateSecret();
         return Utils.toHex(aShared);
     }
+    
+    public String getPeerKey(PublicKey pkPeerB, PublicKey pkPeerC) throws Exception {
+        
+        aKeyAgree.doPhase(pkPeerC, false);              
+		aKeyAgree.doPhase(aKeyAgree.doPhase(pkPeerB, false), true);
+        
+        MessageDigest	hash = MessageDigest.getInstance("SHA1");
+        byte[] cShared = hash.digest(aKeyAgree.generateSecret());
+        return Utils.toHex(cShared);
+    }
+    
+    public Key getIntermKey(PublicKey pkPeerC) throws Exception {
+
+        Key ac = aKeyAgree.doPhase(pkPeerC, false);
+        
+        return ac;
+    }
+    
     
 	/*public static String savePublicKey(PublicKey publ) throws GeneralSecurityException {
     	KeyFactory fact = KeyFactory.getInstance("DH");
