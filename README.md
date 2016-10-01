@@ -1,4 +1,4 @@
-## FaceDrop Project, read more in facedrop.pdf
+## FaceDrop Project, full paper facedrop.pdf
 
 FaceDrop' goal is to create a new approach that allows users to have secure storage and sharing over untrusted cloud providers. The general idea of the proposal is to use separate channels for the authentication and for data exchange. Authentication and key establishment can be done using any popular social media which provides private messaging. 
 
